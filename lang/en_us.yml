@@ -1,0 +1,11 @@
+my_plugin:
+  help:
+    mcdr: Hello world from my plugin!
+    detailed: |
+      §7-----§r MCDR {name} v{ver} §7-----§r
+      Hello world from my plugin!
+      §7{prefix}§r Show this help message
+      §7{prefix} reload§r Reload this plugin
+
+  msg:
+    reloaded: Plugin reloaded
