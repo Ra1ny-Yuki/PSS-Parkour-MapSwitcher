@@ -1,11 +1,55 @@
-my_plugin:
+pss_parkour_map_switcher:
   help:
-    mcdr: Hello world from my plugin!
+    mcdr: A plugin to switch your world save
     detailed: |
-      §7-----§r MCDR {name} v{ver} §7-----§r
-      Hello world from my plugin!
+      §7-----§r MCDR §6{name}§r v§e{ver}§r §7-----§r
+      A plugin to switch your world save
+      Current Map: §b{map}§r
       §7{prefix}§r Show this help message
       §7{prefix} reload§r Reload this plugin
+      §7{prefix} list§r List all the worlds
+      §7{prefix} info§b <map>§r Show detailed info of a map
+      §7{prefix} vote§d <target>§r Start a vote for specified target
+      §7{prefix} choose§3 <option>§r Make your choice
+    vote: |
+      §7{prefix} vote switch§r Vote to switch map
+      §7{prefix} vote delay§a [time]§r Vote to delay the next map rolling
 
   msg:
-    reloaded: Plugin reloaded
+    reloaded: Plugin §areloaded§r
+    list:
+      title: "§6{}§r available worlds:"
+    vote:
+      headline: '§6{player}§r started a vote{overtime} to switch this map (§e{vote_time} minutes remaining):'
+      result: 'Vote result is §b{}§r'
+      overtime: ' (§dOvertime No.{}§r)'
+
+    switch_options:
+      keep: 'Keep current map'
+    delay_options:
+      keep: 'Rolling on time'
+      delay_for: Delay for {} minutes
+    delay:
+      delayed: §aDelayed§r for §e{}§r minutes
+      not_delayed: Next rolling will not be delayed
+    remind: About §6{}§r minutes remaining to switch map randomly
+    info: |
+      §3Slot §b{slot_name}§r has following data:
+      §6Size§r: §e{size}§r
+      §6Last Used§r: §e{slot_info.last_used_formatted}§r
+      §6Comment§r: §e{slot_info.comment}§r
+    kept: Map will not be switched until next rolling
+    chosen: |
+      You have chosen {},
+      You can change your selection before the vote ends
+
+  hover:
+    vote: Click to vote for {option}
+    vote_other: Click to vote another option
+    list:
+      info: Click to show detailed info of slot §b{}§r
+
+  error:
+    player_only: This command can only be called by player
+    vote_running_already: There is already a running vote
+    invalid_vote_option: Invalid vote option, maybe no vote is running or wrong option is selected

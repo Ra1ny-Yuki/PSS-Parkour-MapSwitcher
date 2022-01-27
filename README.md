@@ -1,4 +1,4 @@
-MCDReforged Plugin Template
+Parkour Map Switcher for Plum Stick Server
 -----
 
 A template for MCDReforged (>=2.x) plugin

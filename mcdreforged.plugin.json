@@ -1,16 +1,19 @@
 {
-    "id": "my_plugin",
-    "version": "1.0.0",
-    "name": "My Plugin",
-    "description": "This description is a description to your plugin",
+    "id": "pss_parkour_map_switcher",
+    "version": "0.1.0",
+    "name": "Parkour MapSwitcher",
+    "description": {
+        "en_us": "Quickly switch between the parkour map saves",
+        "zh_cn": "跑酷地图存档间快速切换"
+    },
     "author": [
-        "You"
+        "Ra1ny_Yuki"
     ],
-    "link": "https://github.com/MCDReforged/MCDReforged-PluginTemplate",
+    "link": "https://github.com/ra1ny-yuki/PSS-Parkour-MapSwitcher",
     "dependencies": {
     },
 
     "resources": [
-        "lang"
+        "lang", "LICENSE", "requirements.txt"
     ]
 }
