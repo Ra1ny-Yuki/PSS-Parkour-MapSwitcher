@@ -13,7 +13,7 @@ from .config import config
 DEBUG = True
 gl_server: PluginServerInterface = ServerInterface.get_instance().as_plugin_server_interface()
 meta = gl_server.get_self_metadata()
-TRANSLATION_KEY_PREFIX = gl_server.get_self_metadata().id
+TRANSLATION_KEY_PREFIX = "mapswitch"
 
 
 def debug_log(text: Union[RTextBase, str]):
@@ -66,9 +66,21 @@ def src_name(source: CommandSource):
     return source.player if isinstance(source, PlayerCommandSource) else source.__class__.__name__
 
 
+def ign(func: Union[object, Callable], *args, attr: str = None, **kwargs):
+    try:
+        if attr is not None:
+            getattr(func, attr)(*args, **kwargs)
+        else:
+            func(*args, **kwargs)
+    except Exception as exc:
+        return exc
+    else:
+        return True
+
+
 def tr(translation_key: str, *args, with_prefix=True, **kwargs) -> RTextMCDRTranslation:
-    translation_key = translation_key if with_prefix and not translation_key.startswith(TRANSLATION_KEY_PREFIX) else \
-        f"{TRANSLATION_KEY_PREFIX}.{translation_key}"
+    translation_key = f"{TRANSLATION_KEY_PREFIX}.{translation_key}" if with_prefix and not \
+        translation_key.startswith(TRANSLATION_KEY_PREFIX) else translation_key
     return gl_server.rtr(translation_key, *args, **kwargs)
 
 

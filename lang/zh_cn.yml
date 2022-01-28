@@ -1,0 +1,69 @@
+mapswitch:
+  help:
+    mcdr: 地图轮换插件
+    detailed: |
+      §7-----§r MCDR §6{name}§r v§e{ver}§r §7-----§r
+      用于轮换地图存档的插件
+      §7{prefix}§r 显示该帮助信息
+      §7{prefix} reload§r 重载插件
+      §7{prefix} status§r 显示当前插件状态
+      §7{prefix} list§r 列出所有可用地图存档
+      §7{prefix} info§b <地图>§r 显示某地图的详细信息
+      §7{prefix} vote§d <目标>§r 发起一个投票
+      §7{prefix} choose§3 <选项>§r 投下你的一票
+    vote: |
+      §7{prefix} vote switch§r 发起切换地图投票
+      §7{prefix} vote delay§a [分钟]§r 发起延迟地图自动轮换投票
+
+  msg:
+    reloaded: '[§7MapSwitcher§r] 插件 §a已重载§r'
+    list:
+      title: "§6{}§r 个可用世界:"
+    vote:
+      headline: '§6{player}§r 发起了{target}投票{overtime}(§e{vote_time}§r minutes remaining):'
+      result: '投票结果为 §b{}§r'
+      overtime: ' (§d第{}次加时§r)'
+      no_one: 无人投票，投票已中止
+    status: |
+      §3Map Switcher§r 插件状态:
+      §e下次滚动时间§r: §b{remain}§6 分钟后§r
+      §e当前地图名称§r: §b{current}§6
+    switch_options:
+      keep: 保持当前地图
+      target: 更换地图
+    delay_options:
+      keep: 按时滚动地图
+      delay_for: 延迟 {} 分钟
+      target: 延迟地图滚动
+    delay:
+      delayed: 地图滚动§a延迟了§r约 for §e{}§r 分钟
+      not_delayed: 地图滚动未被延迟
+      not_enough: 延迟时间在投票中耗尽, 将进行地图滚动
+    remind: 地图将在 §6{}§r 后自动随机滚动
+    info: |
+      §3槽位 §b{slot_name}§r 具有如下数据:
+      §6文件大小§r: §e{size}§r
+      §6上次使用§r: §e{slot_info.last_used_formatted}§r
+      §6槽位备注§r: §e{slot_info.comment}§r
+    kept: 下次自动滚动前将不切换地图
+    chosen: |
+      你投给了 {}
+      点此在投票结束前变更投票选项
+    countdown: {} 秒后重新启动服务端...
+    before_load: 服务器将在 §e{}§r 秒后重新启动加载下一地图
+    next_map: 下一张地图是 §b{}§r
+    paused: 投票运行中，自动滚动已暂停，投票结束后恢复
+
+  hover:
+    vote: 点此投给 {option}
+    vote_other: 点此投给其他选项
+    list:
+      info: 点此显示槽位 §b{} 的详细信息§r
+    suggest: 点此建议指令 §7{}§r
+
+  error:
+    player_only: 该命令只能由玩家执行
+    vote_running_already: 已有运行中的投票
+    invalid_vote_option: 无效的投票选项, 投票可能未运行或者该投票无此选项
+    in_session: '出错了: {}'
+    slot_not_found: 地图槽位不存在

@@ -53,7 +53,7 @@ class Configuration(Serializable):
     @classmethod
     def load(cls) -> 'Configuration':
         default, illegal_item = cls.get_default(), []
-        cfg = gl_server.load_config_simple(default_config=default, target_class=cls)
+        cfg = gl_server.load_config_simple(default_config=default.serialize(), target_class=cls)
         if cfg.max_slots <= 0:
             cfg.max_slots = default.max_slots
             illegal_item.append('slot amount (must >0)')

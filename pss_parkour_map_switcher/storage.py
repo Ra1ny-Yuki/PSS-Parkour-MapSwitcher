@@ -15,7 +15,7 @@ SLOT_INFO_FILE = 'info.json'
 
 
 class SlotInfo(Serializable):
-    last_used: Optional[str] = None
+    last_used: Optional[float] = None
     comment: str = ''
 
     @property
@@ -65,10 +65,11 @@ class StorageManager:
                 this_slot_dir = self.get_slot_full_dir(folder)
                 if os.path.isdir(this_slot_dir) and SLOT_INFO_FILE in os.listdir(this_slot_dir):
                     this_slot_info = SlotInfo.load(folder)
-                    slot_info_mapping[folder] = this_slot_info
+                    if this_slot_info is not None:
+                        slot_info_mapping[folder] = this_slot_info
             slot_info_mapping = {
                 item[0]: item[1] for item in sorted(
-                    list(slot_info_mapping.copy().items()), key=lambda item: item[1].last_used, reverse=reverse
+                    list(slot_info_mapping.copy().items()), key=lambda item: item[1].last_used_time, reverse=reverse
                 )
             }
             return slot_info_mapping
@@ -85,9 +86,10 @@ class StorageManager:
 
     def get_random_slots(self):
         with self.__lock:
+            slots_info = self.get_slots_info()
             if self.get_slots_amount() <= self.get_random_slots_amount():
-                return self.get_slots_info()
-            return self.get_slots_info()[:self.get_random_slots_amount()]
+                return slots_info
+            return {item: slots_info[item] for item in list(slots_info.keys())[:self.get_random_slots_amount()]}
 
     def get_slot_size(self, slot_name: str):
         dir_ = self.get_slot_full_dir(slot_name)
@@ -96,9 +98,9 @@ class StorageManager:
             size += sum([os.path.getsize(os.path.join(root, name)) for name in files])
         return size
 
-    def random_a_slot(self, *except_slots) -> Tuple[str, SlotInfo]:
+    def random_a_slot(self, *except_slots: str) -> Tuple[str, SlotInfo]:
         with self.__lock:
-            slots = self.get_random_slots()
+            slots = self.get_random_slots().copy()
             for item in except_slots:
                 if item in slots.keys():
                     del slots[item]

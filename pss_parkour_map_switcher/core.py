@@ -6,7 +6,7 @@ from mcdreforged.api.rtext import *
 from mcdreforged.api.command import *
 
 from .storage import storage
-from .utils import gl_server, tr, DEBUG, src_name
+from .utils import gl_server, tr, DEBUG, src_name, debug_log
 from .sessions import AbstractSession, LoadSlotSession, VoteSession, VoteOption, AutoMapRollingSession
 from .config import config
 
@@ -30,12 +30,13 @@ def htr(key: str, *args, **kwargs) -> Union[str, RTextBase]:
 
 def show_help(source: CommandSource):
     meta = gl_server.get_self_metadata()
-    source.reply(tr('help.detailed', prefix=config.primary_prefix, map=LoadSlotSession.current_slot,
-       name=meta.name, ver=str(meta.version)).set_translator(htr))
+    source.reply(
+        tr('help.detailed', prefix=config.primary_prefix, name=meta.name, ver=str(meta.version)
+    ).set_translator(htr))
 
 
 def show_available_votes(source: CommandSource):
-    source.reply(tr('help.vote').set_translator(htr))
+    source.reply(tr('help.vote', prefix=config.primary_prefix).set_translator(htr))
 
 
 def start_vote_to_switch(source: CommandSource):
@@ -44,8 +45,15 @@ def start_vote_to_switch(source: CommandSource):
             raise IndexError('Vote has multiple results')
         result = result[0]
         if result.actual_name == 'keep':
-            source.reply(tr('msg.kept'))
-        load_session = LoadSlotSession(result.actual_name, handle_exc=False)
+            gl_server.say(tr('msg.kept'))
+            return
+        current: LoadSlotSession = LoadSlotSession.get_instance()
+        if current is not None:
+            current.interrupt()
+        current: AutoMapRollingSession = AutoMapRollingSession.get_instance()
+        if current is not None:
+            current.interrupt()
+        load_session = LoadSlotSession(result.actual_name, handle_exc=False, should_lock=False)
         load_session.start()
 
     slots = list(storage.get_slots_info().keys())
@@ -53,7 +61,7 @@ def start_vote_to_switch(source: CommandSource):
         slots.remove(LoadSlotSession.current_slot)
     options = [VoteOption(item) for item in slots]
     options.append(VoteOption('keep', tr('msg.switch_options.keep'), color=RColor.gold))
-    VoteSession(src_name(source), options, switch_handler)
+    VoteSession(src_name(source), options, switch_handler, tr('msg.switch_options.target'))
 
 
 def start_vote_to_delay_rolling(source: CommandSource, delay_time: Optional[int] = None):
@@ -66,15 +74,15 @@ def start_vote_to_delay_rolling(source: CommandSource, delay_time: Optional[int]
         if result.actual_name == 'delay':
             rolling: AutoMapRollingSession = AutoMapRollingSession.get_instance()
             rolling.delay(delay_time)
-            source.reply(tr('msg.delay.delayed', delay_time))
+            gl_server.say(tr('msg.delay.delayed', delay_time))
         elif result.actual_name == 'keep':
-            source.reply(tr('msg.delay.not_delayed'))
+            gl_server.say(tr('msg.delay.not_delayed'))
 
     options = [
-        VoteOption('delay', tr('msg.delay_options.delay_for')),
+        VoteOption('delay', tr('msg.delay_options.delay_for', delay_time)),
         VoteOption('keep', tr('msg.delay_options.keep'), color=RColor.gold)
     ]
-    VoteSession(src_name(source), options, delay_handler)
+    VoteSession(src_name(source), options, delay_handler, tr('msg.delay_options.target'))
 
 
 def reload_self(source: CommandSource):
@@ -116,14 +124,53 @@ def info_slot(source: CommandSource, slot_name: str):
 def select_option(source: PlayerCommandSource, option_name: str):
     vote: VoteSession = VoteSession.get_instance()
     vote.vote(source, option_name)
-    source.reply(tr('msg.chosen', option_name).c(RAction.suggest_command, f'{config.primary_prefix} vote ').h(
+    option = vote.get_option(option_name)
+    source.reply(tr('msg.chosen', option.colored_display_name).c(
+        RAction.suggest_command, f'{config.primary_prefix} vote ').h(
         tr('hover.vote_other')
     ))
 
 
+def show_status(source: CommandSource):
+    rolling: AutoMapRollingSession = AutoMapRollingSession.get_instance()
+    remaining_time: float = round(rolling.get_remaining_time() / 60, 1) if rolling is not None else 'N/A'
+    current_slot = LoadSlotSession.current_slot if LoadSlotSession is not None else 'N/A'
+    source.reply(tr('msg.status', remain=remaining_time, current=current_slot))
+
+
+def roller():
+    slot_name, slot_info = storage.random_a_slot(LoadSlotSession.current_slot)
+    if AbstractSession.session_global_lock.locked():
+        gl_server.broadcast(tr('msg.paused'))
+    load_session = LoadSlotSession(slot_name, handle_exc=False)
+    load_session.start()
+
+
 def debug_session_status():
     for cls, inst in AbstractSession.all_sessions().items():
-        gl_server.logger.info(RText(cls.__name__, RColor.green), ': ', RText(str(inst), RColor.yellow))
+        gl_server.logger.info('[Debug] ' + RText(cls.__name__, RColor.green) + ': ' + RText(str(inst), RColor.yellow))
+
+
+def debug_start_rolling(source: CommandSource):
+    rolling: Optional[AutoMapRollingSession] = AutoMapRollingSession.get_instance()
+    if rolling is not None:
+        source.reply('[Debug]§c Rolling is already running')
+        return
+    AutoMapRollingSession(roller).set_session()
+    source.reply('[Debug] Rolling §astarted§r')
+
+
+def debug_stop_rolling(source: CommandSource):
+    rolling: AutoMapRollingSession = AutoMapRollingSession.get_instance()
+    if rolling is None:
+        source.reply('[Debug]§c Rolling is not running')
+        return
+    rolling.interrupt()
+    source.reply('[Debug] Rolling §cstopped§r')
+
+
+def debug_randomables(source: CommandSource):
+    source.reply(f'[Debug] {", ".join(list(storage.get_random_slots().keys()))}')
 
 
 def register_command():
@@ -138,20 +185,17 @@ def register_command():
         return Literal(literals).requires(lambda src: src.has_permission(target_perm))
 
     def vote_literal(literals: Union[str, Iterable[str]]):
-        return Literal(literals).requires(VoteSession.get_instance() is None, lambda: tr('error.vote_running_already'))
+        return Literal(literals).requires(lambda: VoteSession.get_instance() is None, lambda: tr('error.vote_running_already'))
 
     def map_quotable_text(name: str):
         return QuotableText(name).requires(
-                lambda src, ctx: ctx['map'] in storage.get_slots_info().keys()
+                lambda src, ctx: ctx['map'] in storage.get_slots_info().keys(), lambda: tr('error.slot_not_found')
             )
 
     def vote_option_quotable_text(name: str):
-        vote: VoteSession = VoteSession.get_instance()
         return QuotableText(name).requires(
-            lambda src, ctx: vote is not None and ctx[name] in vote.actual_vote_options,
+            lambda src, ctx: VoteSession.is_available_option(ctx[name]),
             lambda: tr('error.invalid_vote_option')
-        ).requires(
-            lambda src: src.is_player, lambda: tr('error.player_only')
         )
 
     # nodes
@@ -170,15 +214,23 @@ def register_command():
         permed_literal('vote').runs(lambda src: show_available_votes(src)).then(
             vote_literal('switch').runs(lambda src: start_vote_to_switch(src))
         ).then(
-            vote_literal('delay').runs(lambda src: start_vote_to_delay_rolling(src))
+            vote_literal('delay').runs(lambda src: start_vote_to_delay_rolling(src)).then(
+                Integer('seconds').runs(lambda src, ctx: start_vote_to_delay_rolling(src, ctx['seconds']))
+            )
         ),
-        permed_literal('choose').then(
+        permed_literal('choose').requires(
+            lambda src: src.is_player, lambda: tr('error.player_only')
+        ).then(
             vote_option_quotable_text('option').runs(lambda src, ctx: select_option(src, ctx['option']))
-        )
+        ),
+        permed_literal('status').runs(lambda src: show_status(src))
     ]
 
     debug_nodes: List[AbstractNode] = [
-        permed_literal('session-status').runs(debug_session_status)
+        permed_literal('session-status').runs(debug_session_status),
+        permed_literal('start').runs(lambda src: debug_start_rolling(src)),
+        permed_literal('stop').runs(lambda src: debug_stop_rolling(src)),
+        permed_literal('randomables').runs(lambda src: debug_randomables(src))
     ]
 
     if DEBUG:
