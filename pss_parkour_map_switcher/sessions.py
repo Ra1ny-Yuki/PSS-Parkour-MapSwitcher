@@ -44,8 +44,6 @@ class VoteOption:
             tr('hover.vote', option=self.colored_display_name)
         )
 
-    # TODO: verify
-
 
 class ExecutorScheduleHandler:
     def __init__(self, handler: Callable[[VoteOption], Any], *args, **kwargs):
@@ -308,7 +306,7 @@ class VoteSession(AbstractSession, ABC):
             if option not in self.__vote_options:
                 num += 1
                 text_list.append(f'[§e{num}§r] §7§m-- {option.display_name}')
-        return RText.join('\n', text_list)  # TODO: 这虫虫可多啦
+        return RText.join('\n', text_list)
 
     @property
     def display_text(self):
