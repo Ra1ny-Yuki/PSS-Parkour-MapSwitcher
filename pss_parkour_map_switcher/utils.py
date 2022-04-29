@@ -20,7 +20,15 @@ def debug_log(text: Union[RTextBase, str]):
     gl_server.logger.debug(text, no_check=DEBUG)
 
 
-def cp(this_file: str, target_file: str, allow_not_found=True):
+def cp(this_file: str, target_file: str, allow_not_found=True, override=True):
+    if os.path.isfile(target_file):
+        debug_log(f'Same name file {target_file} found. Ignored')
+        if not override:
+            debug_log(f'Ignored')
+            return
+        else:
+            debug_log(f'Overrided')
+            rm(target_file)
     if os.path.isfile(this_file):
         if os.path.basename(this_file) not in config.ignored_files:
             shutil.copy(this_file, target_file)

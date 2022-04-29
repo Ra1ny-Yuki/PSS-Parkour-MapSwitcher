@@ -11,6 +11,7 @@ class PermissionRequirements(Serializable):
     select: int = 1
     list: int = 1
     info: int = 1
+    settle: int = 3
 
 
 class Configuration(Serializable):

@@ -1,6 +1,6 @@
 {
     "id": "pss_parkour_map_switcher",
-    "version": "0.1.0",
+    "version": "0.1.2",
     "name": "Parkour MapSwitcher",
     "description": {
         "en_us": "Quickly switch between the parkour map saves",

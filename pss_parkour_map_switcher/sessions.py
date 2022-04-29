@@ -162,6 +162,7 @@ class LoadSlotSession(AbstractSession, ABC):
         gl_server.broadcast(tr('msg.next_map', self.slot_name))
         gl_server.broadcast(tr('msg.before_load', config.countdown_time))
         stop_and_wait(config.countdown_time)
+
         if not os.path.isdir(self.temp_folder):
             os.makedirs(self.temp_folder)
             debug_log('Generated temp folder')
@@ -259,7 +260,7 @@ class VoteSession(AbstractSession, ABC):
 
         self.set_session()
         with self.__thread_lock:
-            self.__wait_and_handle()
+            self.__wait_and_settle()
 
     def start_overtime(self, options: List[VoteOption]):
         debug_log('Overtime starting...')
@@ -272,7 +273,7 @@ class VoteSession(AbstractSession, ABC):
         self.voted = {}
         self.overtime += 1
 
-        self.__wait_and_handle()
+        self.__wait_and_settle()
 
     @property
     def option_mapping(self) -> Dict[str, VoteOption]:
@@ -326,7 +327,7 @@ class VoteSession(AbstractSession, ABC):
     def display_to_source(self, source: CommandSource):
         source.reply(self.display_text)
 
-    def __wait_and_handle(self):
+    def __wait_and_settle(self):
         # Ensure current thread
         if gl_server.is_on_executor_thread():
             raise RuntimeError("Vote can't start on TaskExecutor thread")
@@ -338,8 +339,10 @@ class VoteSession(AbstractSession, ABC):
 
         # Wait for vote ends
         time.sleep(config.vote_time_limit * 60)
+        if not self.terminated:
+            self.settle()
 
-
+    def settle(self, force: bool = False):
         # Handle result
         max_value, winners = list(self.vote_result.values())[0], []
         for key, value in self.vote_result.items():
@@ -363,6 +366,8 @@ class VoteSession(AbstractSession, ABC):
             else:
                 self.result_handler(*winners)
         elif len(winners) > 1:
+            if force:
+                self.interrupt()
             self.start_overtime(winners)
         else:
             raise RuntimeError('Result handle error: Empty winner')

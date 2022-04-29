@@ -146,6 +146,13 @@ def roller():
     load_session.start()
 
 
+def settle_vote():
+    vote_inst = VoteSession.get_instance()
+    if vote_inst is not None:
+        vote_inst.settle()
+    raise RequirementNotMet
+
+
 def debug_session_status():
     for cls, inst in AbstractSession.all_sessions().items():
         gl_server.logger.info('[Debug] ' + RText(cls.__name__, RColor.green) + ': ' + RText(str(inst), RColor.yellow))
@@ -223,7 +230,12 @@ def register_command():
         ).then(
             vote_option_quotable_text('option').runs(lambda src, ctx: select_option(src, ctx['option']))
         ),
-        permed_literal('status').runs(lambda src: show_status(src))
+        permed_literal('status').runs(lambda src: show_status(src)),
+        permed_literal('settle').requires(lambda src: VoteSession.get_instance() is not None).runs(
+            lambda: VoteSession.get_instance().settle()
+        ).then(
+            Literal(('-f', '--force')).runs(lambda: VoteSession.get_instance().settle(True))
+        ),
     ]
 
     debug_nodes: List[AbstractNode] = [
